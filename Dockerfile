@@ -1,12 +1,11 @@
 FROM node:20-alpine AS base
-RUN npm install -g npm@latest
 
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --omit=optional
 
 # Rebuild the source code only when needed
 FROM base AS builder
