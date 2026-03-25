@@ -5,6 +5,16 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json ./
+# Remove optional platform-specific binaries (e.g. sharp darwin packages) that
+# have empty version strings and cause npm 10 to abort during lockfile validation.
+RUN node -e "
+  const fs = require('fs');
+  const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+  for (const [k, v] of Object.entries(lock.packages || {})) {
+    if (v.version === '' && v.optional) delete lock.packages[k];
+  }
+  fs.writeFileSync('package-lock.json', JSON.stringify(lock));
+"
 RUN npm ci --omit=optional
 
 # Rebuild the source code only when needed
